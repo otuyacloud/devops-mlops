@@ -1,4 +1,4 @@
-# Project 01 — Production‑Ready Containerized API
+# Project 01 — Production‑Ready Containerized Flask API
 
 ## Overview
 
@@ -6,12 +6,12 @@ This project demonstrates how to take a Python backend service from local develo
 
 The goal is not to build a complex product, but to show real-world DevOps fundamentals:
 
-- Clean application structure
+- Clean Flask application structure
 - Containerized runtime with Docker
 - Local development with Docker Compose
 - Automated testing
-- CI pipeline with GitHub Actions
-- Container image publishing to GitHub Container Registry
+- CI pipeline with GitLab CI
+- Container image publishing to GitLab Container Registry
 - Production-style deployment using Docker Compose on a cloud VM
 
 This project serves as the foundation for later projects involving serverless, Kubernetes, and MLOps.
@@ -19,16 +19,16 @@ This project serves as the foundation for later projects involving serverless, K
 ## Tech Stack
 
 **Application**
-- Python 3.10+
-- FastAPI
+- Python 3.11
+- Flask (application factory pattern)
 - SQLAlchemy
 - PostgreSQL
 
 **Infrastructure & DevOps**
 - Docker
 - Docker Compose
-- GitHub Actions
-- GitHub Container Registry (GHCR)
+- GitLab CI
+- GitLab Container Registry
 
 **Testing**
 - pytest
@@ -39,7 +39,7 @@ This project serves as the foundation for later projects involving serverless, K
 ```
 Client
   ↓
-FastAPI (Docker)
+Flask API (Docker)
   ↓
 PostgreSQL (Docker)
 ```
@@ -49,7 +49,7 @@ PostgreSQL (Docker)
 Client
   ↓
 Cloud VM (Docker Compose)
-  ├── FastAPI (container)
+  ├── Flask API (container)
   └── PostgreSQL (container)
 ```
 
@@ -68,15 +68,12 @@ project-01-container-api/
     crud.py
   tests/
     test_health.py
-    test_items.py
   docker/
     docker-compose.local.yml
     docker-compose.prod.yml
-  .github/
-    workflows/
-      ci.yml
+  .gitlab-ci.yml
   Dockerfile
-  pyproject.toml
+  requirements.txt
   README.md
 ```
 
@@ -105,7 +102,7 @@ Create item payload:
 ```json
 {
   "title": "Example item",
-  "description": "Created via API"
+  "description": "Created via Flask API"
 }
 ```
 
@@ -124,7 +121,6 @@ docker compose -f docker-compose.local.yml up --build
 The API will be available at:
 - http://localhost:8000/health
 - http://localhost:8000/items
-- http://localhost:8000/docs (Swagger UI)
 
 ## Testing
 
@@ -132,7 +128,6 @@ Unit tests are written using pytest.
 
 Run tests locally:
 ```bash
-pip install .[dev]
 pytest
 ```
 
@@ -140,20 +135,20 @@ Tests are also executed automatically as part of the CI pipeline.
 
 ## Docker Image
 
-The application is packaged using a multi-stage Docker build.
+The application is packaged using a standard Docker build (no Buildah or alternative builders).
 
 ```bash
 docker build -t project-01-container-api .
 ```
 
-The container runs the FastAPI app using Uvicorn:
+The container runs the Flask app using the application factory pattern:
 ```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000
+flask --app app.main:create_app run
 ```
 
-## CI/CD — GitHub Actions
+## CI/CD — GitLab CI
 
-The GitHub Actions pipeline performs the following steps:
+The GitLab CI pipeline performs the following steps:
 
 ### Pipeline Stages
 
@@ -162,13 +157,13 @@ The GitHub Actions pipeline performs the following steps:
 - Run unit tests with pytest
 
 **Build**
-- Build Docker image
-- Authenticate with GitHub Container Registry
+- Build Docker image using `docker build`
+- Authenticate with GitLab Container Registry
 - Push image as `latest`
 
 ### Image Location
 ```
-ghcr.io/<username>/project-01-container-api:latest
+registry.gitlab.com/<namespace>/project-01-container-api:latest
 ```
 
 This image is later consumed by the production deployment.
@@ -178,9 +173,9 @@ This image is later consumed by the production deployment.
 ### Deployment Model
 
 For simplicity and clarity, production uses:
-- A single cloud VM (AWS EC2)
+- A single cloud VM
 - Docker Compose
-- GitHub Container Registry as the image source
+- GitLab Container Registry as the image source
 
 ### Run on server
 ```bash
@@ -191,18 +186,17 @@ docker compose -f docker-compose.prod.yml up -d
 The API is exposed on port 80:
 - http://\<server-ip\>/health
 - http://\<server-ip\>/items
-- http://\<server-ip\>/docs
 
 ## Design Decisions
 
-### FastAPI
-Chosen for modern Python API development with automatic OpenAPI documentation and type safety.
+### Flask over FastAPI
+Chosen to demonstrate a minimal, explicit WSGI-style service commonly found in legacy and production systems.
 
 ### Docker Compose for Prod (initially)
 Keeps infrastructure simple while still reflecting real operational patterns.
 
-### GitHub Actions
-Integrates seamlessly with GitHub Container Registry for streamlined CI/CD.
+### GitLab CI
+Mirrors enterprise CI environments and integrates directly with GitLab Container Registry.
 
 ## What This Project Demonstrates
 

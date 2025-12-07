@@ -1,0 +1,27 @@
+# docker/docker-compose.prod.yml
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: app_password
+      POSTGRES_DB: app_db
+    volumes:
+      - p01_pgdata_prod:/var/lib/postgresql/data
+
+  api:
+    image: ghcr.io/YOUR_GH_USERNAME/project-01-container-api:latest
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://app_user:app_password@db:5432/app_db
+      ENVIRONMENT: production
+    depends_on:
+      - db
+    ports:
+      - "80:8000"   # Expose API on port 80
+
+volumes:
+  p01_pgdata_prod:

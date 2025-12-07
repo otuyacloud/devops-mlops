@@ -1,0 +1,42 @@
+stages:
+  - test
+  - build
+
+variables:
+  IMAGE_NAME: "$CI_REGISTRY_IMAGE:latest"
+
+# Job 1: run unit tests
+test:
+  stage: test
+  image: python:3.11
+  before_script:
+    - pip install --upgrade pip
+    - pip install -r requirements.txt
+  script:
+    - pytest
+  artifacts:
+    when: always
+    reports:
+      junit: junit.xml
+    paths:
+      - junit.xml
+
+# Job 2: build & push Docker image using Docker-in-Docker
+build-and-push:
+  stage: build
+  image: docker:25-dind
+  services:
+    - name: docker:25-dind
+      command: ["--tls=false"]
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - echo "Logging into GitLab container registry..."
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+  script:
+    - docker build -t "$IMAGE_NAME" .
+    - docker push "$IMAGE_NAME"
+  only:
+    - main
+    - master
